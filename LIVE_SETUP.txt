@@ -1,0 +1,35 @@
+LIVE WEB DASHBOARD SETUP
+
+This package is ready for web hosting and live Google Sheets data.
+
+PART 1 — CREATE THE LIVE DATA ENDPOINT
+1. Open your 2026 Google Sheet.
+2. Extensions → Apps Script.
+3. Delete the default code.
+4. Copy everything from Code.gs into the Apps Script editor.
+5. Save.
+6. Deploy → New deployment.
+7. Select Web app.
+8. Execute as: Me.
+9. Choose an access setting allowed by your company (for a simple test, Anyone with the link).
+10. Deploy and copy the Web app URL ending in /exec.
+
+PART 2 — CONNECT THE DASHBOARD
+1. Open index.html in a text editor.
+2. Find:
+   const LIVE_API_URL = "";
+3. Paste your /exec URL between the quotes, for example:
+   const LIVE_API_URL = "https://script.google.com/macros/s/XXXXX/exec";
+4. Save index.html.
+
+PART 3 — HOST THE DASHBOARD
+Upload the whole folder to a static web host (GitHub Pages, Netlify, etc.).
+Do not separate index.html from SEAOIL_Logo.png and SEAOIL_Fuel_and_Beyond.png.
+
+RESULT
+Everyone uses one https:// link.
+The dashboard requests current data from the Google Sheet.
+The embedded snapshot remains as a fallback if the live endpoint is temporarily unavailable.
+
+SECURITY
+For company data, do not choose public access unless your company permits it. Prefer organization-restricted access where available.
