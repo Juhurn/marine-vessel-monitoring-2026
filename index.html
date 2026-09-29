@@ -98,46 +98,75 @@ function setStatus(text, live=false, warn=false){
 function loadLiveGoogleSheet(retries=3){
   if(!LIVE_API_URL) return Promise.resolve(false);
   setStatus('CONNECTING TO GOOGLE SHEET…', false, false);
+
   return new Promise((resolve)=>{
-    let attempt=0, done=false;
+    let attempt=0, settled=false;
+
+    const finish=(ok)=>{
+      if(settled)return;
+      settled=true;
+      try{delete window.mvmLiveCallback;}catch(e){}
+      resolve(ok);
+    };
+
     const tryOnce=()=>{
       attempt++;
-      const cb='mvmCallback_'+Date.now()+'_'+attempt;
-      const script=document.createElement('script');
-      let finished=false;
-      const timeoutMs=15000;
-      const finish=(ok)=>{
-        if(finished)return; finished=true;
-        try{delete window[cb];}catch(e){}
-        script.remove();
-        if(ok){done=true;resolve(true);}
-        else if(attempt<retries){setTimeout(tryOnce,700*attempt);}
-        else {done=true;resolve(false);}
-      };
-      window[cb]=(payload)=>{
+
+      window.mvmLiveCallback=(payload)=>{
         try{
           if(payload && payload.ok !== false && Array.isArray(payload.rows)){
-            const liveRows=payload.rows.filter(r=>r && Object.values(r).some(v=>String(v??'').trim()!==''));
+            const liveRows=payload.rows.filter(r =>
+              r && Object.values(r).some(v=>String(v??'').trim()!=='')
+            );
+
             if(liveRows.length){
               rows=liveRows;
-              const stamp=new Date().toLocaleString([], {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-              setStatus('LIVE GOOGLE SHEET • '+rows.length.toLocaleString()+' ROWS • '+stamp, true, false);
-              makeFilters(); apply();
-              finish(true); return;
+              const stamp=new Date().toLocaleString([], {
+                year:'numeric',month:'short',day:'numeric',
+                hour:'2-digit',minute:'2-digit'
+              });
+              setStatus(
+                'LIVE GOOGLE SHEET • '+rows.length.toLocaleString()+' ROWS • '+stamp,
+                true, false
+              );
+              makeFilters();
+              apply();
+              finish(true);
+              return;
             }
           }
         }catch(e){}
-        finish(false);
+
+        if(attempt<retries) setTimeout(tryOnce,1200*attempt);
+        else finish(false);
       };
-      script.onerror=()=>finish(false);
-      const sep=LIVE_API_URL.includes('?')?'&':'?';
-      script.src=LIVE_API_URL+sep+'callback='+encodeURIComponent(cb)+'&t='+Date.now()+'&r='+attempt;
+
+      const script=document.createElement('script');
+      script.async=true;
+      script.src=LIVE_API_URL+
+        (LIVE_API_URL.includes('?')?'&':'?')+
+        'callback=mvmLiveCallback&t='+Date.now()+'&attempt='+attempt;
+
+      script.onerror=()=>{
+        script.remove();
+        if(attempt<retries) setTimeout(tryOnce,1200*attempt);
+        else finish(false);
+      };
+
       document.head.appendChild(script);
-      setTimeout(()=>finish(false),timeoutMs);
+
+      setTimeout(()=>{
+        if(settled)return;
+        script.remove();
+        if(attempt<retries) setTimeout(tryOnce,1200*attempt);
+        else finish(false);
+      },30000);
     };
+
     tryOnce();
   });
 }
+
 function refreshLive(){
   loadLiveGoogleSheet(3).then(ok=>{
     if(!ok) setStatus('LIVE CONNECTION FAILED • SHOWING LAST DATA', false, true);
