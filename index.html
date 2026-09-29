@@ -88,30 +88,59 @@ function loss(v){let n=num(v);return Number.isFinite(n)&&n<0?-n:0}
 function vals(k){return [...new Set(rows.map(r=>clean(col(k,r))).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 
-function loadLiveGoogleSheet(){
+function setStatus(text, live=false, warn=false){
+  const el=document.getElementById('status');
+  el.textContent=text;
+  el.style.background=warn?'#b7791f':'var(--blue)';
+  el.style.borderColor=warn?'#b7791f':'var(--blue)';
+  el.title=text;
+}
+function loadLiveGoogleSheet(retries=3){
   if(!LIVE_API_URL) return Promise.resolve(false);
+  setStatus('CONNECTING TO GOOGLE SHEET…', false, false);
   return new Promise((resolve)=>{
-    const cb='mvmCallback_'+Date.now();
-    const script=document.createElement('script');
-    let finished=false;
-    window[cb]=(payload)=>{
-      if(finished)return; finished=true;
-      try{
-        if(payload && Array.isArray(payload.rows) && payload.rows.length){
-          rows=payload.rows;
-          document.getElementById('status').textContent='LIVE GOOGLE SHEET • '+rows.length.toLocaleString()+' ROWS';
-          document.getElementById('status').style.background='var(--blue)';
-          makeFilters(); apply();
-          resolve(true);
-        }else resolve(false);
-      }catch(e){resolve(false)}
-      cleanup();
+    let attempt=0, done=false;
+    const tryOnce=()=>{
+      attempt++;
+      const cb='mvmCallback_'+Date.now()+'_'+attempt;
+      const script=document.createElement('script');
+      let finished=false;
+      const timeoutMs=15000;
+      const finish=(ok)=>{
+        if(finished)return; finished=true;
+        try{delete window[cb];}catch(e){}
+        script.remove();
+        if(ok){done=true;resolve(true);}
+        else if(attempt<retries){setTimeout(tryOnce,700*attempt);}
+        else {done=true;resolve(false);}
+      };
+      window[cb]=(payload)=>{
+        try{
+          if(payload && payload.ok !== false && Array.isArray(payload.rows)){
+            const liveRows=payload.rows.filter(r=>r && Object.values(r).some(v=>String(v??'').trim()!==''));
+            if(liveRows.length){
+              rows=liveRows;
+              const stamp=new Date().toLocaleString([], {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+              setStatus('LIVE GOOGLE SHEET • '+rows.length.toLocaleString()+' ROWS • '+stamp, true, false);
+              makeFilters(); apply();
+              finish(true); return;
+            }
+          }
+        }catch(e){}
+        finish(false);
+      };
+      script.onerror=()=>finish(false);
+      const sep=LIVE_API_URL.includes('?')?'&':'?';
+      script.src=LIVE_API_URL+sep+'callback='+encodeURIComponent(cb)+'&t='+Date.now()+'&r='+attempt;
+      document.head.appendChild(script);
+      setTimeout(()=>finish(false),timeoutMs);
     };
-    function cleanup(){delete window[cb];script.remove();}
-    script.onerror=()=>{if(!finished){finished=true;cleanup();resolve(false)}};
-    script.src=LIVE_API_URL+(LIVE_API_URL.includes('?')?'&':'?')+'callback='+cb+'&t='+Date.now();
-    document.head.appendChild(script);
-    setTimeout(()=>{if(!finished){finished=true;cleanup();resolve(false)}},10000);
+    tryOnce();
+  });
+}
+function refreshLive(){
+  loadLiveGoogleSheet(3).then(ok=>{
+    if(!ok) setStatus('LIVE CONNECTION FAILED • SHOWING LAST DATA', false, true);
   });
 }
 
@@ -122,7 +151,7 @@ let s=document.createElement('input');s.className='search';s.placeholder='Search
 vals(key).forEach(v=>{let l=document.createElement('label');l.className='check';l.dataset.v=v;l.innerHTML='<input type="checkbox"><span>'+esc(v)+'</span>';l.querySelector('input').onchange=e=>{e.target.checked?selected[id].add(v):selected[id].delete(v);document.getElementById('cnt_'+id).textContent=selected[id].size?selected[id].size+' selected ▾':'All ▾';apply()};o.appendChild(l)});
 s.oninput=()=>{let q=s.value.toLowerCase();o.querySelectorAll('.check').forEach(x=>x.style.display=x.dataset.v.toLowerCase().includes(q)?'flex':'none')};
 b.onclick=e=>{e.stopPropagation();document.querySelectorAll('.filter').forEach(x=>x!==f&&x.classList.remove('open'));f.classList.toggle('open')};f.append(b,m);h.appendChild(f)});
-let clear=document.createElement('button');clear.className='btn ghost';clear.textContent='Clear filters';clear.onclick=()=>{Object.keys(selected).forEach(id=>{selected[id].clear();document.querySelectorAll('#f_'+id+' input').forEach(x=>x.checked=false);document.getElementById('cnt_'+id).textContent='All ▾'});apply()};h.appendChild(clear)}
+let clear=document.createElement('button');clear.className='btn ghost';clear.textContent='Clear filters';clear.onclick=()=>{Object.keys(selected).forEach(id=>{selected[id].clear();document.querySelectorAll('#f_'+id+' input').forEach(x=>x.checked=false);document.getElementById('cnt_'+id).textContent='All ▾'});apply()};h.appendChild(clear); let refresh=document.createElement('button');refresh.className='btn';refresh.textContent='↻ Refresh Live Data';refresh.onclick=refreshLive;h.appendChild(refresh)}
 document.addEventListener('click',()=>document.querySelectorAll('.filter').forEach(x=>x.classList.remove('open')));
 function apply(){filtered=rows.filter(r=>defs.every(([id,,key])=>!selected[id].size||selected[id].has(clean(col(key,r)))));render()}
 function group(k,field){let m={};filtered.forEach(r=>{let x=clean(col(k,r))||'Unspecified';m[x]=(m[x]||0)+loss(col(field,r))});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
@@ -139,11 +168,8 @@ let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+'
 let keys=['MONTH','VESSEL NAME','PRODUCT','LOADPORT','DISPORT',V,LL,DD,'Loadport Surveying Company','Disport Surveying Company'];document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered movements.';document.getElementById('table').innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+filtered.slice(0,1000).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(clean(col(k,r)))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
 makeFilters();apply();
-loadLiveGoogleSheet().then(ok=>{
-  if(!ok && LIVE_API_URL){
-    document.getElementById('status').textContent='SNAPSHOT • 995 ROWS';
-  }
-});
+refreshLive();
+setInterval(refreshLive, 60000);
 </script>
 <script>if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(e => console.warn('PWA service worker registration failed:', e))); }</script>
 </body></html>
