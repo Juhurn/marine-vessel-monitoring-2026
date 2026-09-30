@@ -39,6 +39,9 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .tabpanel{display:none}.tabpanel.active{display:block}
 .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .summary-filter-display{font-size:12px;font-weight:800;color:var(--navy);text-align:center;margin:2px 0 12px;padding:6px 10px;background:#f7fafc;border:1px solid #e4ebf2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.summary-card{padding:18px}.summary-card h3{margin:0 0 5px;text-align:center;color:var(--navy);font-size:16px}.summary-card p{margin:0 0 14px;text-align:center;color:var(--muted);font-size:12px}
+
+.loss-table th,.loss-table td{white-space:nowrap;text-align:center}
+.loss-table th:first-child,.loss-table td:first-child{text-align:left}
 .loss-table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;white-space:nowrap}
 .loss-table th{background:#edf3f8;color:var(--navy);font-size:12px;text-align:center;padding:12px;border-bottom:1px solid var(--line)}
 .loss-table td{padding:13px 12px;text-align:center;border-bottom:1px solid #edf1f5;font-size:13px}.loss-table td:first-child{text-align:left;font-weight:700;color:var(--navy)}
@@ -91,9 +94,9 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 <div class="tabpanel" id="panelSummary">
 <div id="summaryFilterDisplay" class="summary-filter-display">All Filters</div>
 <div class="summary-grid">
-<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Signed variance from the currently filtered vessel movements.</p>
-<table class="loss-table"><thead><tr><th>Loss Type</th><th>@ Air (kL)</th><th>@ 15°C (kL)</th></tr></thead><tbody id="lossSummaryBody"></tbody></table>
-<div class="summary-note">Negative values indicate loss; positive values indicate gain. Figures retain their original signs.</div></section>
+<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Variance summary using the same calculation structure as the Monthly Pivot.</p>
+<table class="loss-table"><thead><tr><th rowspan="2">Loss Type</th><th rowspan="2">No. of Movements</th><th colspan="3">@ Air</th><th colspan="3">@ 15°C</th></tr><tr><th>Volume (kL)</th><th>%</th><th>Ave. Total Variance</th><th>Volume (kL)</th><th>%</th><th>Ave. Total Variance</th></tr></thead><tbody id="lossSummaryBody"></tbody></table>
+</section>
 </div>
 </div>
 </main>
@@ -265,19 +268,31 @@ function renderSummaryFilterDisplay(){const el=document.getElementById('summaryF
 function renderLossSummary(){
   renderSummaryFilterDisplay();
   const items=[
-    ['BL–AL','BL- AL @ air, Diff SHORE TO SHIP','BL- AL @ 15°C, Diff SHORE TO SHIP'],
-    ['AL–BD','AL – BD @ air, Diff SHIP TO SHIP','AL- BD @ 15°C, Diff SHIP TO SHIP'],
-    ['BD–SR','BD – SR @ air, Diff SHIP TO SHORE','BD – SR @ 15°C, Diff SHIP TO SHORE'],
-    ['BL–SR','BL – SR @ air, Diff SHORE TO SHORE','BL – SR @ 15°C, Diff SHORE TO SHORE']
+    ['BL–AL','BL- AL @ air, Diff SHORE TO SHIP','BL- AL @ 15°C, Diff SHORE TO SHIP','BL@ air','BL@ 15°C'],
+    ['AL–BD','AL – BD @ air, Diff SHIP TO SHIP','AL- BD @ 15°C, Diff SHIP TO SHIP','AL @ air','AL @  15°C'],
+    ['BD–SR','BD – SR @ air, Diff SHIP TO SHORE','BD – SR @ 15°C, Diff SHIP TO SHORE','BD @ air','BD @  15°C'],
+    ['BL–SR','BL – SR @ air, Diff SHORE TO SHORE','BL – SR @ 15°C, Diff SHORE TO SHORE','BL@ air','BL@ 15°C']
   ];
-  let body='',airTotal=0,tempTotal=0;
-  items.forEach(([label,airKey,tempKey])=>{
-    const air=filtered.reduce((s,r)=>s+signed(col(airKey,r)),0);
-    const temp=filtered.reduce((s,r)=>s+signed(col(tempKey,r)),0);
-    airTotal+=air;tempTotal+=temp;
-    body+=`<tr><td>${label}</td><td>${signedCell(air)}</td><td>${signedCell(temp)}</td></tr>`;
+  const fmtPct=n=>{
+    if(!Number.isFinite(n)||Math.abs(n)<0.0000005)n=0;
+    return (n*100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+  };
+  const pctCell=n=>'<span class="'+signedClass(n)+'">'+esc(fmtPct(n))+'</span>';
+  const avgCell=n=>signedCell(n);
+  let body='';
+  items.forEach(([label,airKey,tempKey,airBase,tempBase])=>{
+    const airRows=filtered.filter(r=>Number.isFinite(num(col(airKey,r))));
+    const tempRows=filtered.filter(r=>Number.isFinite(num(col(tempKey,r))));
+    const air=airRows.reduce((s,r)=>s+num(col(airKey,r)),0);
+    const temp=tempRows.reduce((s,r)=>s+num(col(tempKey,r)),0);
+    const airBaseTotal=airRows.reduce((s,r)=>s+num(col(airBase,r)),0);
+    const tempBaseTotal=tempRows.reduce((s,r)=>s+num(col(tempBase,r)),0);
+    const airPct=airBaseTotal?air/airBaseTotal:0;
+    const tempPct=tempBaseTotal?temp/tempBaseTotal:0;
+    const airAvg=airRows.length?air/airRows.length:0;
+    const tempAvg=tempRows.length?temp/tempRows.length:0;
+    body+=`<tr><td>${label}</td><td>${airRows.length}</td><td>${signedCell(air)}</td><td>${pctCell(airPct)}</td><td>${avgCell(airAvg)}</td><td>${signedCell(temp)}</td><td>${pctCell(tempPct)}</td><td>${avgCell(tempAvg)}</td></tr>`;
   });
-  body+=`<tr class="loss-total"><td>TOTAL</td><td>${signedCell(airTotal)}</td><td>${signedCell(tempTotal)}</td></tr>`;
   document.getElementById('lossSummaryBody').innerHTML=body;
 }
 
