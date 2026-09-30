@@ -18,7 +18,9 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .menu{display:none;position:absolute;top:44px;left:0;width:280px;max-height:340px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 15px 35px #10243e25;padding:8px;z-index:50}.filter.open .menu{display:block}.menu input.search{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px}.check{display:flex;gap:8px;padding:7px;border-radius:8px;font-size:13px}.check:hover{background:#f1f6fb}.check input{accent-color:var(--blue)}
 .btn{border:0;border-radius:10px;padding:10px 13px;font-family:inherit;font-weight:800;cursor:pointer}.primary{background:var(--navy);color:white}.primary:hover{background:var(--blue)}.ghost{background:#fff4b8;color:var(--navy);border:1px solid #f0d45b}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}.kpi,.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 18px #10243e08}.kpi{padding:18px;border-top:4px solid var(--yellow)}.lab{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase}.val{font-size:27px;font-weight:800;margin-top:8px;word-break:break-word;color:var(--navy)}.meta{font-size:12px;color:var(--muted);margin-top:4px}
-.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}.card{padding:18px;min-width:0;border-top:3px solid #e7edf4}.card h3{margin:0 0 5px;font-size:16px;color:var(--navy);text-align:center}.card p{margin:0 0 14px;font-size:12px;color:var(--muted);text-align:center}.chart{height:320px}.full{grid-column:1/-1}
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}.card{padding:18px;min-width:0;border-top:3px solid #e7edf4}.card h3{margin:0 0 5px;font-size:16px;color:var(--navy);text-align:center}.card p{margin:0 0 14px;font-size:12px;color:var(--muted);text-align:center}.chart{height:340px;position:relative;padding:6px 4px 0}.full{grid-column:1/-1}
+.variance-legend{display:flex;justify-content:center;gap:18px;align-items:center;margin:-2px 0 8px;font-size:11px;font-weight:800;color:var(--muted)}.variance-legend span{display:inline-flex;align-items:center;gap:5px}.variance-legend i{display:inline-block;width:9px;height:9px;border-radius:50%}.variance-legend .neg i{background:#d92d3f}.variance-legend .pos i{background:#172b3a}.variance-legend .zero i{background:#9aa8b5}
+.kpi .val.negative,.signed-negative{color:#d92d3f!important}.kpi .val.positive,.signed-positive{color:#172b3a!important}.signed-zero{color:#172b3a!important}
 .table{overflow:auto;max-height:480px;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}th{position:sticky;top:0;background:#edf3f8;padding:9px;text-align:left}td{padding:8px 9px;border-bottom:1px solid #edf1f5}
 .notice{font-size:12px;color:var(--muted);margin-left:auto}
 @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}@media(max-width:650px){main{padding:14px}.kpis{grid-template-columns:1fr}.filter{min-width:145px}}
@@ -36,12 +38,11 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .tabbtn.active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 3px 10px rgba(0,59,113,.16)}
 .tabpanel{display:none}.tabpanel.active{display:block}
 .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.summary-card{padding:18px}.summary-card h3{margin:0 0 5px;text-align:center;color:var(--navy);font-size:16px}.summary-card p{margin:0 0 14px;text-align:center;color:var(--muted);font-size:12px}
+.summary-filter-display{font-size:12px;font-weight:800;color:var(--navy);text-align:center;margin:2px 0 12px;padding:6px 10px;background:#f7fafc;border:1px solid #e4ebf2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.summary-card{padding:18px}.summary-card h3{margin:0 0 5px;text-align:center;color:var(--navy);font-size:16px}.summary-card p{margin:0 0 14px;text-align:center;color:var(--muted);font-size:12px}
 .loss-table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;white-space:nowrap}
 .loss-table th{background:#edf3f8;color:var(--navy);font-size:12px;text-align:center;padding:12px;border-bottom:1px solid var(--line)}
 .loss-table td{padding:13px 12px;text-align:center;border-bottom:1px solid #edf1f5;font-size:13px}.loss-table td:first-child{text-align:left;font-weight:700;color:var(--navy)}
 .loss-table tr:last-child td{border-bottom:0}.loss-total{font-weight:800;background:#f7fafc}.summary-note{font-size:11px;color:var(--muted);margin-top:10px}
-.summary-filter-display{font-size:12px;font-weight:700;color:var(--navy);text-align:center;margin:2px 0 14px;padding:6px 10px;background:#f7fafc;border:1px solid #e4ebf2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:700px){.summary-grid{grid-template-columns:1fr}.tabs{margin-top:14px}.tabbtn{flex:1;text-align:center}}
 </style>
 
@@ -74,24 +75,25 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 </div>
 <div class="tabpanel active" id="panelOverview">
 <div class="kpis"><div class="kpi"><div class="lab">Total Movements</div><div class="val" id="km">—</div><div class="meta">filtered records</div></div>
-<div class="kpi"><div class="lab">Overall Shore-to-Shore Loss</div><div class="val" id="kl">—</div><div class="meta">kL @ air • negative variance counted as loss</div></div>
-<div class="kpi"><div class="lab">Highest-Loss Vessel</div><div class="val" id="kv">—</div><div class="meta" id="kvm"></div></div>
-<div class="kpi"><div class="lab">Highest-Loss Disport</div><div class="val" id="kp">—</div><div class="meta" id="kpm"></div></div></div>
+<div class="kpi"><div class="lab">Overall Shore-to-Shore Variance</div><div class="val" id="kl">—</div><div class="meta">kL @ air • negative variance counted as loss</div></div>
+<div class="kpi"><div class="lab">Highest-Variance Vessel</div><div class="val" id="kv">—</div><div class="meta" id="kvm"></div></div>
+<div class="kpi"><div class="lab">Highest-Variance Disport</div><div class="val" id="kp">—</div><div class="meta" id="kpm"></div></div></div>
 <div class="grid">
-<section class="card"><h3>Monthly Overall Loss</h3><p>Accumulated negative BL–SR @ air variance.</p><div class="chart"><canvas id="cmonth"></canvas></div></section>
-<section class="card"><h3>Loss by Vessel</h3><p>Top vessels by accumulated overall loss.</p><div class="chart"><canvas id="cvessel"></canvas></div></section>
-<section class="card"><h3>Loss by Disport / Depot</h3><p>Discharge-side loss using BD–SR @ air.</p><div class="chart"><canvas id="cdis"></canvas></div></section>
-<section class="card"><h3>Loss by Loadport</h3><p>Loading-side loss using BL–AL @ air.</p><div class="chart"><canvas id="cload"></canvas></div></section>
-<section class="card"><h3>Surveying Company — Loss Exposure</h3><p>Combined loadport/disport surveying-company loss association.</p><div class="chart"><canvas id="csurvey"></canvas></div></section>
-<section class="card"><h3>Disport → Vessel Loss Relationship</h3><p>Top terminal/vessel combinations by overall loss.</p><div class="chart"><canvas id="crel"></canvas></div></section>
+<section class="card"><h3>Monthly Overall Variance</h3><p>Signed BL–SR @ air variance by month.</p><div class="chart"><canvas id="cmonth"></canvas></div></section>
+<section class="card"><h3>Variance by Vessel</h3><p>Top vessels by absolute signed variance.</p><div class="chart"><canvas id="cvessel"></canvas></div></section>
+<section class="card"><h3>Variance by Disport / Depot</h3><p>Discharge-side signed variance using BD–SR @ air.</p><div class="chart"><canvas id="cdis"></canvas></div></section>
+<section class="card"><h3>Variance by Loadport</h3><p>Loading-side signed variance using BL–AL @ air.</p><div class="chart"><canvas id="cload"></canvas></div></section>
+<section class="card"><h3>Surveying Company — Variance Exposure</h3><p>Combined loadport/disport surveying-company signed variance association.</p><div class="chart"><canvas id="csurvey"></canvas></div></section>
+<section class="card"><h3>Disport → Vessel Variance Relationship</h3><p>Top terminal/vessel combinations by absolute signed variance.</p><div class="chart"><canvas id="crel"></canvas></div></section>
 <section class="card full"><h3>Filtered Vessel Movements</h3><p id="note"></p><div class="table" id="table"></div></section>
 </div>
 </div>
 <div class="tabpanel" id="panelSummary">
+<div id="summaryFilterDisplay" class="summary-filter-display">All Filters</div>
 <div class="summary-grid">
-<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Accumulated negative variance from the currently filtered vessel movements.</p><div id="summaryFilterDisplay" class="summary-filter-display">All Filters</div>
+<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Signed variance from the currently filtered vessel movements.</p>
 <table class="loss-table"><thead><tr><th>Loss Type</th><th>@ Air (kL)</th><th>@ 15°C (kL)</th></tr></thead><tbody id="lossSummaryBody"></tbody></table>
-<div class="summary-note">Loss is displayed as a positive kL value from negative variance only, consistent with the dashboard's existing loss convention.</div></section>
+<div class="summary-note">Negative values indicate loss; positive values indicate gain. Figures retain their original signs.</div></section>
 </div>
 </div>
 </main>
@@ -258,18 +260,7 @@ function switchTab(tab){
   document.getElementById('tabOverview').classList.toggle('active',overview);
   document.getElementById('tabSummary').classList.toggle('active',!overview);
 }
-function fmtLoss(n){return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL'}
-function renderSummaryFilterDisplay(){
-  const el=document.getElementById('summaryFilterDisplay');
-  if(!el) return;
-  const parts=[];
-  defs.forEach(([id,label])=>{
-    if(selected[id] && selected[id].size){
-      parts.push(label+': '+Array.from(selected[id]).join(', '));
-    }
-  });
-  el.textContent=parts.length ? parts.join(' • ') : 'All Filters';
-}
+function renderSummaryFilterDisplay(){const el=document.getElementById('summaryFilterDisplay');if(!el)return;const parts=[];defs.forEach(([id,label])=>{if(selected[id]&&selected[id].size)parts.push(label+': '+Array.from(selected[id]).join(', '));});el.textContent=parts.length?parts.join(' • '):'All Filters';}
 
 function renderLossSummary(){
   renderSummaryFilterDisplay();
@@ -279,15 +270,32 @@ function renderLossSummary(){
     ['BD–SR','BD – SR @ air, Diff SHIP TO SHORE','BD – SR @ 15°C, Diff SHIP TO SHORE'],
     ['BL–SR','BL – SR @ air, Diff SHORE TO SHORE','BL – SR @ 15°C, Diff SHORE TO SHORE']
   ];
-  let body='', airTotal=0, tempTotal=0;
+  let body='',airTotal=0,tempTotal=0;
   items.forEach(([label,airKey,tempKey])=>{
-    const air=filtered.reduce((s,r)=>s+loss(col(airKey,r)),0);
-    const temp=filtered.reduce((s,r)=>s+loss(col(tempKey,r)),0);
-    airTotal+=air; tempTotal+=temp;
-    body+=`<tr><td>${label}</td><td>${fmtLoss(air)}</td><td>${fmtLoss(temp)}</td></tr>`;
+    const air=filtered.reduce((s,r)=>s+signed(col(airKey,r)),0);
+    const temp=filtered.reduce((s,r)=>s+signed(col(tempKey,r)),0);
+    airTotal+=air;tempTotal+=temp;
+    body+=`<tr><td>${label}</td><td>${signedCell(air)}</td><td>${signedCell(temp)}</td></tr>`;
   });
-  body+=`<tr class="loss-total"><td>TOTAL</td><td>${fmtLoss(airTotal)}</td><td>${fmtLoss(tempTotal)}</td></tr>`;
+  body+=`<tr class="loss-total"><td>TOTAL</td><td>${signedCell(airTotal)}</td><td>${signedCell(tempTotal)}</td></tr>`;
   document.getElementById('lossSummaryBody').innerHTML=body;
+}
+
+function rebuildFiltersPreserve(){
+  const old={};
+  Object.keys(selected).forEach(id=>old[id]=new Set(selected[id]));
+  makeFilters();
+  Object.keys(old).forEach(id=>{
+    if(!selected[id]) return;
+    old[id].forEach(v=>selected[id].add(v));
+    document.querySelectorAll('#f_'+id+' input').forEach(x=>{
+      const parent=x.closest('.check');
+      if(parent) x.checked=selected[id].has(parent.dataset.v);
+    });
+    const cnt=document.getElementById('cnt_'+id);
+    if(cnt) cnt.textContent=selected[id].size ? selected[id].size+' selected ▾' : 'All ▾';
+  });
+  refreshVesselOptions();
 }
 
 function makeFilters(){
@@ -355,8 +363,6 @@ function makeFilters(){
       });
     };
 
-    // Keep the filter menu open while selecting multiple items.
-    // It closes only when the user clicks outside the filter.
     m.onclick=e=>e.stopPropagation();
 
     b.onclick=e=>{
@@ -393,23 +399,50 @@ function makeFilters(){
 }
 document.addEventListener('click',()=>document.querySelectorAll('.filter').forEach(x=>x.classList.remove('open')));
 function apply(){filtered=rows.filter(r=>defs.every(([id,,key])=>!selected[id].size||selected[id].has(clean(col(key,r)))));render()}
-function group(k,field){let m={};filtered.forEach(r=>{let x=clean(col(k,r))||'Unspecified';m[x]=(m[x]||0)+loss(col(field,r))});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
-function chart(id,labels,data,type='bar'){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),{type,data:{labels,datasets:[{data,backgroundColor:'#2f80c9',borderColor:'#1769aa',borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:type==='doughnut'?{}:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#e8eef5'}}}}})}
-function render(){
-document.getElementById('km').textContent=filtered.length.toLocaleString();let total=filtered.reduce((s,r)=>s+loss(col(V,r)),0);document.getElementById('kl').textContent=total.toLocaleString(undefined,{maximumFractionDigits:3})+' kL';
-let v=group('VESSEL NAME',V)[0],p=group('DISPORT',V)[0];document.getElementById('kv').textContent=v?v[0]:'—';document.getElementById('kvm').textContent=v?v[1].toLocaleString(undefined,{maximumFractionDigits:3})+' kL loss':'';document.getElementById('kp').textContent=p?p[0]:'—';document.getElementById('kpm').textContent=p?p[1].toLocaleString(undefined,{maximumFractionDigits:3})+' kL overall loss':'';
-let months=[1,2,3,4,5,6,7,8,9,10,11,12], names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], gm=group('MONTH',V);chart('cmonth',names,months.map(m=>gm.find(x=>String(x[0])===String(m))?.[1]||0));
-let vv=group('VESSEL NAME',V).slice(0,10);chart('cvessel',vv.map(x=>x[0]),vv.map(x=>x[1]));
-let dp=group('DISPORT',DD).slice(0,10);chart('cdis',dp.map(x=>x[0]),dp.map(x=>x[1]));
-let lp=group('LOADPORT',LL).slice(0,10);chart('cload',lp.map(x=>x[0]),lp.map(x=>x[1]));
-let sm={};filtered.forEach(r=>{[col('Loadport Surveying Company',r),col('Disport Surveying Company',r)].forEach(s=>{s=clean(s);if(s)sm[s]=(sm[s]||0)+loss(col(V,r))})});let ss=Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,8);chart('csurvey',ss.map(x=>x[0]),ss.map(x=>x[1]),'doughnut');
-let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+' → '+(clean(col('VESSEL NAME',r))||'Unspecified');rel[k]=(rel[k]||0)+loss(col(V,r))});let rr=Object.entries(rel).sort((a,b)=>b[1]-a[1]).slice(0,12);chart('crel',rr.map(x=>x[0]),rr.map(x=>x[1]));
-renderLossSummary();
-let keys=['MONTH','VESSEL NAME','PRODUCT','LOADPORT','DISPORT',V,LL,DD,'Loadport Surveying Company','Disport Surveying Company'];document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered movements.';document.getElementById('table').innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+filtered.slice(0,1000).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(clean(col(k,r)))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+function signed(v){let n=num(v);return Number.isFinite(n)?n:0}
+function fmtSigned(n){if(Math.abs(n)<0.0005)n=0;return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL'}
+function signedClass(n){return n<0?'signed-negative':n>0?'signed-positive':'signed-zero'}
+function signedCell(v){const n=signed(v);return '<span class="'+signedClass(n)+'">'+esc(fmtSigned(n))+'</span>'}
+function group(k,field){let m={};filtered.forEach(r=>{let x=clean(col(k,r))||'Unspecified';m[x]=(m[x]||0)+signed(col(field,r))});return Object.entries(m).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]))}
+function chart(id,labels,data,type='bar'){
+  if(charts[id])charts[id].destroy();
+  const canvas=document.getElementById(id);
+  const values=data.map(Number);
+  const colors=values.map(v=>v<0?'#d92d3f':v>0?'#0074c8':'#b7c2cc');
+  charts[id]=new Chart(canvas,{type:'bar',data:{labels,datasets:[{data:values,backgroundColor:'#0b6fbd',borderColor:'#075b9f',borderWidth:1,borderRadius:8,borderSkipped:false,maxBarThickness:34}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:450},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtSigned(c.raw)}}},scales:{x:{grid:{display:false},ticks:{color:'#53677b',font:{family:'Nunito',weight:'700',size:11},maxRotation:35,minRotation:0}},y:{grid:{color:'#e7edf3'},ticks:{color:'#53677b',font:{family:'Nunito',weight:'700',size:11},callback:v=>Number(v).toLocaleString(undefined,{maximumFractionDigits:1})},title:{display:true,text:'Variance (kL)',color:'#53677b',font:{family:'Nunito',weight:'800',size:11}},beginAtZero:true}}}});
 }
+
+function render(){
+  document.getElementById('km').textContent=filtered.length.toLocaleString();
+  const total=filtered.reduce((s,r)=>s+signed(col(V,r)),0);
+  const kl=document.getElementById('kl');
+  kl.textContent=fmtSigned(total);
+  kl.className='val '+signedClass(total);
+  document.querySelector('#kl').parentElement.querySelector('.meta').textContent='kL @ air • negative = loss • positive = gain';
+
+  let v=group('VESSEL NAME',V)[0],p=group('DISPORT',V)[0];
+  document.getElementById('kv').textContent=v?v[0]:'—';
+  document.getElementById('kvm').textContent=v?fmtSigned(v[1])+' variance':'';
+  document.getElementById('kvm').className='meta '+(v?signedClass(v[1]):'');
+  document.getElementById('kp').textContent=p?p[0]:'—';
+  document.getElementById('kpm').textContent=p?fmtSigned(p[1])+' variance':'';
+  document.getElementById('kpm').className='meta '+(p?signedClass(p[1]):'');
+
+  let months=[1,2,3,4,5,6,7,8,9,10,11,12],names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],gm=group('MONTH',V);
+  chart('cmonth',names,months.map(m=>gm.find(x=>String(x[0])===String(m))?.[1]||0));
+  let vv=group('VESSEL NAME',V).slice(0,10);chart('cvessel',vv.map(x=>x[0]),vv.map(x=>x[1]));
+  let dp=group('DISPORT',DD).slice(0,10);chart('cdis',dp.map(x=>x[0]),dp.map(x=>x[1]));
+  let lp=group('LOADPORT',LL).slice(0,10);chart('cload',lp.map(x=>x[0]),lp.map(x=>x[1]));
+  let sm={};filtered.forEach(r=>{[col('Loadport Surveying Company',r),col('Disport Surveying Company',r)].forEach(s=>{s=clean(s);if(s)sm[s]=(sm[s]||0)+signed(col(V,r))})});let ss=Object.entries(sm).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,8);chart('csurvey',ss.map(x=>x[0]),ss.map(x=>x[1]));
+  let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+' → '+(clean(col('VESSEL NAME',r))||'Unspecified');rel[k]=(rel[k]||0)+signed(col(V,r))});let rr=Object.entries(rel).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,12);chart('crel',rr.map(x=>x[0]),rr.map(x=>x[1]));
+  renderLossSummary();
+  let keys=['MONTH','VESSEL NAME','PRODUCT','LOADPORT','DISPORT',V,LL,DD,'Loadport Surveying Company','Disport Surveying Company'];
+  document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered movements.';
+  document.getElementById('table').innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+filtered.slice(0,1000).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(clean(col(k,r)))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+
 makeFilters();apply();
 refreshLive();
-setInterval(refreshLive, 60000);
 </script>
 <script>if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(e => console.warn('PWA service worker registration failed:', e))); }</script>
 </body></html>
