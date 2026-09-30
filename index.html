@@ -41,6 +41,7 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .loss-table th{background:#edf3f8;color:var(--navy);font-size:12px;text-align:center;padding:12px;border-bottom:1px solid var(--line)}
 .loss-table td{padding:13px 12px;text-align:center;border-bottom:1px solid #edf1f5;font-size:13px}.loss-table td:first-child{text-align:left;font-weight:700;color:var(--navy)}
 .loss-table tr:last-child td{border-bottom:0}.loss-total{font-weight:800;background:#f7fafc}.summary-note{font-size:11px;color:var(--muted);margin-top:10px}
+.summary-filter-display{font-size:12px;font-weight:700;color:var(--navy);text-align:center;margin:2px 0 14px;padding:6px 10px;background:#f7fafc;border:1px solid #e4ebf2;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:700px){.summary-grid{grid-template-columns:1fr}.tabs{margin-top:14px}.tabbtn{flex:1;text-align:center}}
 </style>
 
@@ -88,7 +89,7 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 </div>
 <div class="tabpanel" id="panelSummary">
 <div class="summary-grid">
-<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Accumulated negative variance from the currently filtered vessel movements.</p>
+<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Accumulated negative variance from the currently filtered vessel movements.</p><div id="summaryFilterDisplay" class="summary-filter-display">All Filters</div>
 <table class="loss-table"><thead><tr><th>Loss Type</th><th>@ Air (kL)</th><th>@ 15°C (kL)</th></tr></thead><tbody id="lossSummaryBody"></tbody></table>
 <div class="summary-note">Loss is displayed as a positive kL value from negative variance only, consistent with the dashboard's existing loss convention.</div></section>
 </div>
@@ -258,7 +259,20 @@ function switchTab(tab){
   document.getElementById('tabSummary').classList.toggle('active',!overview);
 }
 function fmtLoss(n){return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL'}
+function renderSummaryFilterDisplay(){
+  const el=document.getElementById('summaryFilterDisplay');
+  if(!el) return;
+  const parts=[];
+  defs.forEach(([id,label])=>{
+    if(selected[id] && selected[id].size){
+      parts.push(label+': '+Array.from(selected[id]).join(', '));
+    }
+  });
+  el.textContent=parts.length ? parts.join(' • ') : 'All Filters';
+}
+
 function renderLossSummary(){
+  renderSummaryFilterDisplay();
   const items=[
     ['BL–AL','BL- AL @ air, Diff SHORE TO SHIP','BL- AL @ 15°C, Diff SHORE TO SHIP'],
     ['AL–BD','AL – BD @ air, Diff SHIP TO SHIP','AL- BD @ 15°C, Diff SHIP TO SHIP'],
@@ -340,6 +354,10 @@ function makeFilters(){
         x.style.display=x.dataset.v.toLowerCase().includes(q)?'flex':'none';
       });
     };
+
+    // Keep the filter menu open while selecting multiple items.
+    // It closes only when the user clicks outside the filter.
+    m.onclick=e=>e.stopPropagation();
 
     b.onclick=e=>{
       e.stopPropagation();
