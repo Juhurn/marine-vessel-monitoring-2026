@@ -30,6 +30,18 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .brand-banner{max-width:1500px;margin:20px auto 0;padding:0 26px}
 .brand-banner img{display:block;width:100%;height:120px;object-fit:cover;object-position:center;
   border-radius:14px;box-shadow:0 6px 18px rgba(0,59,113,.12)}
+
+.tabs{display:flex;gap:8px;margin:18px 0 12px;flex-wrap:wrap}
+.tabbtn{border:1px solid #d6e1eb;background:#fff;color:var(--navy);padding:10px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit}
+.tabbtn.active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 3px 10px rgba(0,59,113,.16)}
+.tabpanel{display:none}.tabpanel.active{display:block}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.summary-card{padding:18px}.summary-card h3{margin:0 0 5px;text-align:center;color:var(--navy);font-size:16px}.summary-card p{margin:0 0 14px;text-align:center;color:var(--muted);font-size:12px}
+.loss-table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;white-space:nowrap}
+.loss-table th{background:#edf3f8;color:var(--navy);font-size:12px;text-align:center;padding:12px;border-bottom:1px solid var(--line)}
+.loss-table td{padding:13px 12px;text-align:center;border-bottom:1px solid #edf1f5;font-size:13px}.loss-table td:first-child{text-align:left;font-weight:700;color:var(--navy)}
+.loss-table tr:last-child td{border-bottom:0}.loss-total{font-weight:800;background:#f7fafc}.summary-note{font-size:11px;color:var(--muted);margin-top:10px}
+@media(max-width:700px){.summary-grid{grid-template-columns:1fr}.tabs{margin-top:14px}.tabbtn{flex:1;text-align:center}}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -55,6 +67,11 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
   </div>
 </header>
 <main><div class="toolbar" id="filters"></div>
+<div class="tabs">
+<button class="tabbtn active" id="tabOverview" onclick="switchTab('overview')">Dashboard Overview</button>
+<button class="tabbtn" id="tabSummary" onclick="switchTab('summary')">Loss Summary</button>
+</div>
+<div class="tabpanel active" id="panelOverview">
 <div class="kpis"><div class="kpi"><div class="lab">Total Movements</div><div class="val" id="km">—</div><div class="meta">filtered records</div></div>
 <div class="kpi"><div class="lab">Overall Shore-to-Shore Loss</div><div class="val" id="kl">—</div><div class="meta">kL @ air • negative variance counted as loss</div></div>
 <div class="kpi"><div class="lab">Highest-Loss Vessel</div><div class="val" id="kv">—</div><div class="meta" id="kvm"></div></div>
@@ -67,7 +84,16 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 <section class="card"><h3>Surveying Company — Loss Exposure</h3><p>Combined loadport/disport surveying-company loss association.</p><div class="chart"><canvas id="csurvey"></canvas></div></section>
 <section class="card"><h3>Disport → Vessel Loss Relationship</h3><p>Top terminal/vessel combinations by overall loss.</p><div class="chart"><canvas id="crel"></canvas></div></section>
 <section class="card full"><h3>Filtered Vessel Movements</h3><p id="note"></p><div class="table" id="table"></div></section>
-</div></main>
+</div>
+</div>
+<div class="tabpanel" id="panelSummary">
+<div class="summary-grid">
+<section class="card summary-card full"><h3>Total Loss Summary</h3><p>Accumulated negative variance from the currently filtered vessel movements.</p>
+<table class="loss-table"><thead><tr><th>Loss Type</th><th>@ Air (kL)</th><th>@ 15°C (kL)</th></tr></thead><tbody id="lossSummaryBody"></tbody></table>
+<div class="summary-note">Loss is displayed as a positive kL value from negative variance only, consistent with the dashboard's existing loss convention.</div></section>
+</div>
+</div>
+</main>
 <script>
 /*
  LIVE MODE:
@@ -224,6 +250,32 @@ function refreshVesselOptions(){
     selected.vessel.size ? selected.vessel.size+' selected ▾' : 'All ▾';
 }
 
+function switchTab(tab){
+  const overview=tab==='overview';
+  document.getElementById('panelOverview').classList.toggle('active',overview);
+  document.getElementById('panelSummary').classList.toggle('active',!overview);
+  document.getElementById('tabOverview').classList.toggle('active',overview);
+  document.getElementById('tabSummary').classList.toggle('active',!overview);
+}
+function fmtLoss(n){return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL'}
+function renderLossSummary(){
+  const items=[
+    ['BL–AL','BL- AL @ air, Diff SHORE TO SHIP','BL- AL @ 15°C, Diff SHORE TO SHIP'],
+    ['AL–BD','AL – BD @ air, Diff SHIP TO SHIP','AL- BD @ 15°C, Diff SHIP TO SHIP'],
+    ['BD–SR','BD – SR @ air, Diff SHIP TO SHORE','BD – SR @ 15°C, Diff SHIP TO SHORE'],
+    ['BL–SR','BL – SR @ air, Diff SHORE TO SHORE','BL – SR @ 15°C, Diff SHORE TO SHORE']
+  ];
+  let body='', airTotal=0, tempTotal=0;
+  items.forEach(([label,airKey,tempKey])=>{
+    const air=filtered.reduce((s,r)=>s+loss(col(airKey,r)),0);
+    const temp=filtered.reduce((s,r)=>s+loss(col(tempKey,r)),0);
+    airTotal+=air; tempTotal+=temp;
+    body+=`<tr><td>${label}</td><td>${fmtLoss(air)}</td><td>${fmtLoss(temp)}</td></tr>`;
+  });
+  body+=`<tr class="loss-total"><td>TOTAL</td><td>${fmtLoss(airTotal)}</td><td>${fmtLoss(tempTotal)}</td></tr>`;
+  document.getElementById('lossSummaryBody').innerHTML=body;
+}
+
 function makeFilters(){
   let h=document.getElementById('filters');
   h.innerHTML='';
@@ -334,6 +386,7 @@ let dp=group('DISPORT',DD).slice(0,10);chart('cdis',dp.map(x=>x[0]),dp.map(x=>x[
 let lp=group('LOADPORT',LL).slice(0,10);chart('cload',lp.map(x=>x[0]),lp.map(x=>x[1]));
 let sm={};filtered.forEach(r=>{[col('Loadport Surveying Company',r),col('Disport Surveying Company',r)].forEach(s=>{s=clean(s);if(s)sm[s]=(sm[s]||0)+loss(col(V,r))})});let ss=Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,8);chart('csurvey',ss.map(x=>x[0]),ss.map(x=>x[1]),'doughnut');
 let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+' → '+(clean(col('VESSEL NAME',r))||'Unspecified');rel[k]=(rel[k]||0)+loss(col(V,r))});let rr=Object.entries(rel).sort((a,b)=>b[1]-a[1]).slice(0,12);chart('crel',rr.map(x=>x[0]),rr.map(x=>x[1]));
+renderLossSummary();
 let keys=['MONTH','VESSEL NAME','PRODUCT','LOADPORT','DISPORT',V,LL,DD,'Loadport Surveying Company','Disport Surveying Company'];document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered movements.';document.getElementById('table').innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+filtered.slice(0,1000).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(clean(col(k,r)))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
 makeFilters();apply();
