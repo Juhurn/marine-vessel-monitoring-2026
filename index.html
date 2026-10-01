@@ -28,7 +28,7 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .image-logo{background:#fff;border-radius:9px;width:150px;height:66px;overflow:hidden;
   box-shadow:0 3px 10px rgba(0,59,113,.12);border:1px solid #e4ebf2;
   display:flex;align-items:center;justify-content:center}
-.image-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.image-logo img{display:block;width:100%;height:100%;object-fit:contain}.image-logo .logo-fallback{display:none;font-size:28px;line-height:1;font-weight:900;letter-spacing:-1.5px;color:var(--navy);background:var(--yellow);width:100%;height:100%;align-items:center;justify-content:center}.image-logo.logo-broken img{display:none}.image-logo.logo-broken .logo-fallback{display:flex}
 .brand-banner{max-width:1500px;margin:20px auto 0;padding:0 26px}
 .brand-banner img{display:block;width:100%;height:120px;object-fit:cover;object-position:center;
   border-radius:14px;box-shadow:0 6px 18px rgba(0,59,113,.12)}
@@ -61,7 +61,7 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
   <div class="headinner">
     <div class="brandarea">
       <div class="sealogo image-logo">
-        <img src="SEAOIL_Logo.png" alt="SEAOIL">
+        <img src="SEAOIL_Logo.png" alt="SEAOIL" onerror="this.parentElement.classList.add('logo-broken')"><span class="logo-fallback">SEAOIL</span>
       </div>
       <div>
         <div class="brand">Marine Vessel Monitoring 2026</div>
@@ -521,7 +521,7 @@ function render(){
   let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+' → '+(clean(col('VESSEL NAME',r))||'Unspecified');rel[k]=(rel[k]||0)+signed(col(V,r))});let rr=Object.entries(rel).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,12);chart('crel',rr.map(x=>x[0]),rr.map(x=>x[1]));
   renderCompanyLoss();
   renderLossSummary();
-  let keys=['MONTH','VESSEL NAME','PRODUCT','LOADPORT','DISPORT',V,LL,DD,'Loadport Surveying Company','Disport Surveying Company'];
+  let keys=['MONTH','VESSEL NAME','VOYAGE NUMBER','PRODUCT','LOADPORT','DISPORT','BL- AL @ air, Diff SHORE TO SHIP','AL – BD @ air, Diff SHIP TO SHIP','BD – SR @ air, Diff SHIP TO SHORE','BL – SR @ air, Diff SHORE TO SHORE','Loadport Surveying Company','Disport Surveying Company'];
   document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered records.';
   document.getElementById('table').innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+filtered.slice(0,1000).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(clean(col(k,r)))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
