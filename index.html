@@ -86,7 +86,7 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 <section class="card"><h3>Variance by Vessel</h3><p>Top vessels by absolute signed variance.</p><div class="chart"><canvas id="cvessel"></canvas></div></section>
 <section class="card"><h3>Variance by Disport / Depot</h3><p>Discharge-side signed variance using BD–SR @ air.</p><div class="chart"><canvas id="cdis"></canvas></div></section>
 <section class="card"><h3>Variance by Loadport</h3><p>Loading-side signed variance using BL–AL @ air.</p><div class="chart"><canvas id="cload"></canvas></div></section>
-<section class="card"><h3>Surveying Company — Variance Exposure</h3><p>Combined loadport/disport surveying-company signed variance association.</p><div class="chart"><canvas id="csurvey"></canvas></div></section>
+<section class="card" id="companyLossCard"><h3 id="companyLossTitle">OTC vs Chartered — Loss Comparison</h3><p id="companyLossDesc">Click a slice to view the loss by vessel. Results follow the active filters.</p><div class="chart"><canvas id="ccompany"></canvas></div></section>
 <section class="card"><h3>Disport → Vessel Variance Relationship</h3><p>Top terminal/vessel combinations by absolute signed variance.</p><div class="chart"><canvas id="crel"></canvas></div></section>
 <section class="card full"><h3>Filtered Vessel Movements</h3><p id="note"></p><div class="table" id="table"></div></section>
 </div>
@@ -289,9 +289,11 @@ function renderLossSummary(){
     const tempBaseTotal=tempRows.reduce((s,r)=>s+num(col(tempBase,r)),0);
     const airPct=airBaseTotal?air/airBaseTotal:0;
     const tempPct=tempBaseTotal?temp/tempBaseTotal:0;
-    const airAvg=airRows.length?air/airRows.length:0;
-    const tempAvg=tempRows.length?temp/tempRows.length:0;
-    body+=`<tr><td>${label}</td><td>${airRows.length}</td><td>${signedCell(air)}</td><td>${pctCell(airPct)}</td><td>${avgCell(airAvg)}</td><td>${signedCell(temp)}</td><td>${pctCell(tempPct)}</td><td>${avgCell(tempAvg)}</td></tr>`;
+    const airMovements=uniqueVoyageCount(airRows);
+    const tempMovements=uniqueVoyageCount(tempRows);
+    const airAvg=airMovements?air/airMovements:0;
+    const tempAvg=tempMovements?temp/tempMovements:0;
+    body+=`<tr><td>${label}</td><td>${airMovements}</td><td>${signedCell(air)}</td><td>${pctCell(airPct)}</td><td>${avgCell(airAvg)}</td><td>${signedCell(temp)}</td><td>${pctCell(tempPct)}</td><td>${avgCell(tempAvg)}</td></tr>`;
   });
   document.getElementById('lossSummaryBody').innerHTML=body;
 }
@@ -413,22 +415,90 @@ function makeFilters(){
   h.appendChild(refresh);
 }
 document.addEventListener('click',()=>document.querySelectorAll('.filter').forEach(x=>x.classList.remove('open')));
-function apply(){filtered=rows.filter(r=>defs.every(([id,,key])=>!selected[id].size||selected[id].has(clean(col(key,r)))));render()}
+function apply(){companyDrill=null;filtered=rows.filter(r=>defs.every(([id,,key])=>!selected[id].size||selected[id].has(clean(col(key,r)))));render()}
 function signed(v){let n=num(v);return Number.isFinite(n)?n:0}
 function fmtSigned(n){if(Math.abs(n)<0.0005)n=0;return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL'}
 function signedClass(n){return n<0?'signed-negative':n>0?'signed-positive':'signed-zero'}
 function signedCell(v){const n=signed(v);return '<span class="'+signedClass(n)+'">'+esc(fmtSigned(n))+'</span>'}
 function group(k,field){let m={};filtered.forEach(r=>{let x=clean(col(k,r))||'Unspecified';m[x]=(m[x]||0)+signed(col(field,r))});return Object.entries(m).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]))}
-function chart(id,labels,data,type='bar'){
+function chart(id,labels,data,type='bar',opts={} ){
   if(charts[id])charts[id].destroy();
   const canvas=document.getElementById(id);
+  if(!canvas)return;
   const values=data.map(Number);
-  const colors=values.map(v=>v<0?'#d92d3f':v>0?'#0074c8':'#b7c2cc');
-  charts[id]=new Chart(canvas,{type:'bar',data:{labels,datasets:[{data:values,backgroundColor:'#0b6fbd',borderColor:'#075b9f',borderWidth:1,borderRadius:8,borderSkipped:false,maxBarThickness:34}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:450},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtSigned(c.raw)}}},scales:{x:{grid:{display:false},ticks:{color:'#53677b',font:{family:'Nunito',weight:'700',size:11},maxRotation:35,minRotation:0}},y:{grid:{color:'#e7edf3'},ticks:{color:'#53677b',font:{family:'Nunito',weight:'700',size:11},callback:v=>Number(v).toLocaleString(undefined,{maximumFractionDigits:1})},title:{display:true,text:'Variance (kL)',color:'#53677b',font:{family:'Nunito',weight:'800',size:11}},beginAtZero:true}}}});
+  const isPie=type==='pie' || type==='doughnut';
+  const dataset={data:values};
+  if(isPie){
+    dataset.backgroundColor=['#0b6fbd','#f2b705'];
+    dataset.borderColor='#ffffff';
+    dataset.borderWidth=2;
+  }else{
+    dataset.backgroundColor='#0b6fbd';
+    dataset.borderColor='#075b9f';
+    dataset.borderWidth=1;
+    dataset.borderRadius=8;
+    dataset.borderSkipped=false;
+    dataset.maxBarThickness=34;
+  }
+  charts[id]=new Chart(canvas,{type,data:{labels,datasets:[dataset]},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:450},
+    plugins:{legend:{display:isPie,position:'bottom',labels:{font:{family:'Nunito',weight:'800',size:11}}},tooltip:{callbacks:{label:c=>isPie?(c.label+': '+fmtLoss(c.raw)) : fmtSigned(c.raw)}}},
+    scales:isPie?{}:{x:{grid:{display:false},ticks:{color:'#53677b',font:{family:'Nunito',weight:'700',size:11},maxRotation:35,minRotation:0}},y:{grid:{color:'#e7edf3'},ticks:{color:'#53677b',font:{family:'Nunito',weight:'700',size:11},callback:v=>Number(v).toLocaleString(undefined,{maximumFractionDigits:1})},title:{display:true,text:'Variance (kL)',color:'#53677b',font:{family:'Nunito',weight:'800',size:11}},beginAtZero:true}},
+    onClick:(evt,elements)=>{if(opts.onClick)opts.onClick(evt,elements)}
+  }});
+}
+function fmtLoss(n){return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL'}
+function uniqueVoyageCount(data){
+  const seen=new Set();
+  data.forEach(r=>{
+    const v=clean(col('VOYAGE NUMBER',r));
+    if(v) seen.add(v);
+  });
+  return seen.size;
+}
+function latestFilteredDate(data){
+  let max=0;
+  data.forEach(r=>{
+    ['LOADING DATE','DISCHARGING DATE'].forEach(k=>{
+      const raw=col(k,r); const d=raw?new Date(raw):null;
+      if(d && !isNaN(d) && d.getTime()>max)max=d.getTime();
+    });
+  });
+  if(!max)return '';
+  return new Date(max).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+}
+function renderCompanyLoss(){
+  const title=document.getElementById('companyLossTitle');
+  const desc=document.getElementById('companyLossDesc');
+  const card=document.getElementById('companyLossCard');
+  const c=document.getElementById('ccompany');
+  if(companyDrill){
+    const company=companyDrill;
+    title.textContent=company+' — Vessel Loss';
+    desc.innerHTML='<span style="cursor:pointer;font-weight:800;color:#0b6fbd" onclick="companyDrill=null;renderCompanyLoss()">← Back to OTC vs Chartered</span>';
+    const vessel={};
+    filtered.filter(r=>clean(col('COMPANY',r)).toUpperCase()===company).forEach(r=>{
+      const v=clean(col('VESSEL NAME',r))||'Unspecified';
+      vessel[v]=(vessel[v]||0)+loss(col(V,r));
+    });
+    const arr=Object.entries(vessel).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    chart('ccompany',arr.map(x=>x[0]),arr.map(x=>x[1]),'bar');
+    return;
+  }
+  title.textContent='OTC vs Chartered — Loss Comparison';
+  desc.textContent='Click a slice to view the loss by vessel. Results follow the active filters.';
+  const totals=['OTC','CHARTERED'].map(company=>filtered.filter(r=>clean(col('COMPANY',r)).toUpperCase()===company).reduce((sum,r)=>sum+loss(col(V,r)),0));
+  chart('ccompany',['OTC','CHARTERED'],totals,'doughnut',{onClick:(evt,elements)=>{
+    if(!elements.length)return;
+    companyDrill=['OTC','CHARTERED'][elements[0].index];
+    renderCompanyLoss();
+  }});
 }
 
 function render(){
-  document.getElementById('km').textContent=filtered.length.toLocaleString();
+  document.getElementById('km').textContent=uniqueVoyageCount(filtered).toLocaleString();
+  const asOf=latestFilteredDate(filtered);
+  document.querySelector('#km').parentElement.querySelector('.meta').innerHTML='unique voyages / movements'+(asOf?' <span style="display:block;font-size:10px;margin-top:3px">*As of '+esc(asOf)+'</span>':'');
   const total=filtered.reduce((s,r)=>s+signed(col(V,r)),0);
   const kl=document.getElementById('kl');
   kl.textContent=fmtSigned(total);
@@ -448,11 +518,11 @@ function render(){
   let vv=group('VESSEL NAME',V).slice(0,10);chart('cvessel',vv.map(x=>x[0]),vv.map(x=>x[1]));
   let dp=group('DISPORT',DD).slice(0,10);chart('cdis',dp.map(x=>x[0]),dp.map(x=>x[1]));
   let lp=group('LOADPORT',LL).slice(0,10);chart('cload',lp.map(x=>x[0]),lp.map(x=>x[1]));
-  let sm={};filtered.forEach(r=>{[col('Loadport Surveying Company',r),col('Disport Surveying Company',r)].forEach(s=>{s=clean(s);if(s)sm[s]=(sm[s]||0)+signed(col(V,r))})});let ss=Object.entries(sm).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,8);chart('csurvey',ss.map(x=>x[0]),ss.map(x=>x[1]));
   let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+' → '+(clean(col('VESSEL NAME',r))||'Unspecified');rel[k]=(rel[k]||0)+signed(col(V,r))});let rr=Object.entries(rel).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,12);chart('crel',rr.map(x=>x[0]),rr.map(x=>x[1]));
+  renderCompanyLoss();
   renderLossSummary();
   let keys=['MONTH','VESSEL NAME','PRODUCT','LOADPORT','DISPORT',V,LL,DD,'Loadport Surveying Company','Disport Surveying Company'];
-  document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered movements.';
+  document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered records.';
   document.getElementById('table').innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+filtered.slice(0,1000).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(clean(col(k,r)))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
 
