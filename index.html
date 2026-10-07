@@ -23,6 +23,8 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 .kpi .val.negative,.signed-negative{color:#d92d3f!important}.kpi .val.positive,.signed-positive{color:#172b3a!important}.signed-zero{color:#172b3a!important}
 .table{overflow:auto;max-height:480px;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}th{position:sticky;top:0;background:#edf3f8;padding:9px;text-align:left}td{padding:8px 9px;border-bottom:1px solid #edf1f5}
 .notice{font-size:12px;color:var(--muted);margin-left:auto}
+.financial-card{padding:16px;align-self:start}.financial-card h3{margin:0 0 4px;text-align:center;color:var(--navy);font-size:16px}.financial-card .financial-sub{margin:0 0 10px;text-align:center;color:var(--muted);font-size:11px}.financial-table{width:100%;border-collapse:collapse;font-size:12px}.financial-table th{background:#edf3f8;color:var(--navy);font-weight:800;padding:7px 6px;text-align:center;border-bottom:1px solid var(--line)}.financial-table td{padding:7px 6px;border-bottom:1px solid #edf1f5;text-align:center}.financial-table td:first-child{text-align:left;font-weight:800;color:var(--navy)}.financial-table tr:last-child td{border-bottom:0}.financial-price{width:82px;padding:6px 7px;border:1px solid #cbd8e6;border-radius:7px;font:700 12px Nunito,Arial,sans-serif;text-align:right}.financial-price:focus{outline:2px solid #9fc9ee;border-color:var(--blue)}.financial-money{font-weight:800;color:var(--navy);white-space:nowrap}.financial-loss{white-space:nowrap}.financial-total-row{background:#f7fafc;font-weight:800}.financial-filter{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}@media(max-width:650px){main{padding:14px}.kpis{grid-template-columns:1fr}.filter{min-width:145px}}
 
 .image-logo{background:#fff;border-radius:9px;width:150px;height:66px;overflow:hidden;
@@ -88,6 +90,7 @@ main{max-width:1500px;margin:auto;padding:22px 26px}.toolbar{background:#fff;bor
 <section class="card"><h3>Variance by Loadport</h3><p>Loading-side signed variance using BL–AL @ air.</p><div class="chart"><canvas id="cload"></canvas></div></section>
 <section class="card" id="companyLossCard"><h3 id="companyLossTitle">OTC vs Chartered — Loss Comparison</h3><p id="companyLossDesc">Click a slice to view the loss by vessel. Results follow the active filters.</p><div class="chart"><canvas id="ccompany"></canvas></div></section>
 <section class="card"><h3>Disport → Vessel Variance Relationship</h3><p>Top terminal/vessel combinations by absolute signed variance.</p><div class="chart"><canvas id="crel"></canvas></div></section>
+<section class="card financial-card"><h3>Financial Impact of Vessel Loss</h3><p class="financial-sub">Negative BL–SR @ air variance × 1,000 × price/L</p><table class="financial-table"><thead><tr><th>Group Product</th><th>Price / L</th><th>Total Loss</th><th>Monetary Value</th></tr></thead><tbody id="financialBody"></tbody></table><div id="financialFilter" class="financial-filter">Based on current filters</div></section>
 <section class="card full"><h3>Filtered Vessel Movements</h3><p id="note"></p><div class="table" id="table"></div></section>
 </div>
 </div>
@@ -467,6 +470,55 @@ function latestFilteredDate(data){
   if(!max)return '';
   return new Date(max).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
 }
+const FIN_PRODUCTS=['ADO','ETOH','MOGAS','CME'];
+const financialPrices={};
+try{Object.assign(financialPrices,JSON.parse(localStorage.getItem('marineFinancialPrices')||'{}'))}catch(e){}
+function saveFinancialPrice(product,value){
+  financialPrices[product]=value;
+  try{localStorage.setItem('marineFinancialPrices',JSON.stringify(financialPrices))}catch(e){}
+  updateFinancialValues();
+}
+function financialLossFor(product){
+  return filtered.filter(r=>clean(col('GROUP PRODUCT',r)).toUpperCase()===product).reduce((sum,r)=>{
+    const n=num(col(V,r));
+    return sum+(Number.isFinite(n)&&n<0?-n:0);
+  },0);
+}
+function updateFinancialValues(){
+  const body=document.getElementById('financialBody'); if(!body)return;
+  let grandLoss=0,grandValue=0,hasValue=false;
+  FIN_PRODUCTS.forEach(product=>{
+    const row=body.querySelector(`tr[data-product="${product}"]`); if(!row)return;
+    const lossKL=financialLossFor(product);
+    const priceNum=num(financialPrices[product]);
+    const value=Number.isFinite(priceNum)&&priceNum>=0?lossKL*1000*priceNum:NaN;
+    grandLoss+=lossKL;
+    if(Number.isFinite(value)){grandValue+=value;hasValue=true}
+    const lossEl=row.querySelector('.financial-loss');
+    const moneyEl=row.querySelector('.financial-money');
+    if(lossEl)lossEl.textContent=lossKL.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL';
+    if(moneyEl)moneyEl.textContent=Number.isFinite(value)?'₱ '+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  });
+  const total=body.querySelector('.financial-total-row');
+  if(total){
+    const cells=total.querySelectorAll('td');
+    if(cells[2])cells[2].textContent=grandLoss.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})+' kL';
+    if(cells[3])cells[3].textContent=hasValue?'₱ '+grandValue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  }
+}
+function renderFinancialImpact(){
+  const body=document.getElementById('financialBody'); if(!body)return;
+  const parts=[]; defs.forEach(([id,label])=>{if(selected[id]&&selected[id].size)parts.push(label+': '+Array.from(selected[id]).join(', '))});
+  const filterEl=document.getElementById('financialFilter'); if(filterEl)filterEl.textContent=parts.length?parts.join(' • '):'Based on current filters: All';
+  body.innerHTML=FIN_PRODUCTS.map(product=>{
+    const lossKL=financialLossFor(product);
+    const price=financialPrices[product]??''; const priceNum=num(price);
+    const value=Number.isFinite(priceNum)&&priceNum>=0?lossKL*1000*priceNum:NaN;
+    return `<tr data-product="${product}"><td>${product}</td><td><input class="financial-price" type="text" inputmode="decimal" autocomplete="off" placeholder="PHP" value="${esc(price)}" oninput="saveFinancialPrice('${product}',this.value)"></td><td class="financial-loss">${lossKL.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3})} kL</td><td class="financial-money">${Number.isFinite(value)?'₱ '+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td></tr>`;
+  }).join('')+`<tr class="financial-total-row"><td>TOTAL</td><td></td><td></td><td></td></tr>`;
+  updateFinancialValues();
+}
+
 function renderCompanyLoss(){
   const title=document.getElementById('companyLossTitle');
   const desc=document.getElementById('companyLossDesc');
@@ -520,6 +572,7 @@ function render(){
   let lp=group('LOADPORT',LL).slice(0,10);chart('cload',lp.map(x=>x[0]),lp.map(x=>x[1]));
   let rel={};filtered.forEach(r=>{let k=(clean(col('DISPORT',r))||'Unspecified')+' → '+(clean(col('VESSEL NAME',r))||'Unspecified');rel[k]=(rel[k]||0)+signed(col(V,r))});let rr=Object.entries(rel).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,12);chart('crel',rr.map(x=>x[0]),rr.map(x=>x[1]));
   renderCompanyLoss();
+  renderFinancialImpact();
   renderLossSummary();
   let keys=['MONTH','VESSEL NAME','VOYAGE NUMBER','PRODUCT','LOADPORT','DISPORT','BL- AL @ air, Diff SHORE TO SHIP','AL – BD @ air, Diff SHIP TO SHIP','BD – SR @ air, Diff SHIP TO SHORE','BL – SR @ air, Diff SHORE TO SHORE','Loadport Surveying Company','Disport Surveying Company'];
   document.getElementById('note').textContent='Showing '+Math.min(filtered.length,1000).toLocaleString()+' of '+filtered.length.toLocaleString()+' filtered records.';
